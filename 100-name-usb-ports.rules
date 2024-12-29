@@ -1,0 +1,2 @@
+SUBSYSTEM=="usb", KERNELS=="1-1.1", SYMLINK+="usb_top_back"
+SUBSYSTEM=="usb", KERNELS=="1-1.3", SYMLINK+="usb_bottom_back"
