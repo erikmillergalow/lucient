@@ -4,30 +4,32 @@
 sudo modprobe -r snd_seq_dummy
 sudo modprobe snd_seq_dummy ports=4
 
-# get USB-based client IDs
+# get devpath from udev mapped device symlinks
 TOP_PATH=$(udevadm info -n /dev/usb_top_back | grep DEVPATH | cut -d= -f2)
 BOTTOM_PATH=$(udevadm info -n /dev/usb_bottom_back | grep DEVPATH | cut -d= -f2)
 
-TOP_CARD=$(udevadm info -n /dev/snd/midi* | grep "$TOP_PATH" | grep -o 'card[0-9]' | sed 's/card//' | head -n1)
-BOTTOM_CARD=$(udevadm info -n /dev/snd/midi* | grep "$BOTTOM_PATH" | grep -o 'card[0-9]' | sed 's/card//' | head -n1)
+# get alsa card numbers
+TOP_CARD=$(udevadm info -n /dev/snd/midi* | grep -m1 "$TOP_PATH" | grep -o 'card[0-9]' | sed 's/card//')
+BOTTOM_CARD=$(udevadm info -n /dev/snd/midi* | grep -m1 "$BOTTOM_PATH" | grep -o 'card[0-9]' | sed 's/card//')
 
-TOP_CLIENT=$(aconnect -l | grep "APC mini mk2.*card=$TOP_CARD" | grep -o 'client [0-9]*' | cut -d' ' -f2 | head -n1)
-BOTTOM_CLIENT=$(aconnect -l | grep "APC mini mk2.*card=$BOTTOM_CARD" | grep -o 'client [0-9]*' | cut -d' ' -f2 | head -n1)
+# get alsa client ids
+TOP_CLIENT=$(aconnect -l | grep -m1 "APC mini mk2.*card=$TOP_CARD" | grep -o 'client [0-9]*' | cut -d' ' -f2)
+BOTTOM_CLIENT=$(aconnect -l | grep -m1 "APC mini mk2.*card=$BOTTOM_CARD" | grep -o 'client [0-9]*' | cut -d' ' -f2)
 
 # clear existing connections
 aconnect -x
 
-# map controller in top usb port
-aconnect "$TOP_CLIENT:0" "14:0"    # input
-aconnect "14:2" "$TOP_CLIENT:0"    # feedback
+# map top controller
+aconnect "$TOP_CLIENT:0" "14:0"    # Input
+aconnect "14:2" "$TOP_CLIENT:0"    # Feedback
 
-# map controller in top usb port
-aconnect "$BOTTOM_CLIENT:0" "14:1"  # input
-aconnect "14:3" "$BOTTOM_CLIENT:0"  # feedback
+# map bottom controller
+aconnect "$BOTTOM_CLIENT:0" "14:1"  # Input
+aconnect "14:3" "$BOTTOM_CLIENT:0"  # Feedback
 
-echo "Mappings created:"
-echo "Top controller (card $TOP_CARD -> client $TOP_CLIENT) -> Through 0/2"
-echo "Bottom controller (card $BOTTOM_CARD -> client $BOTTOM_CLIENT) -> Through 1/3"
+# echo "mappings created:"
+# echo "top controller (card $TOP_CARD -> client $TOP_CLIENT)
+# echo "bottom controller (card $BOTTOM_CARD -> client $BOTTOM_CLIENT)
 
 # systemctl start qlcplus
 
